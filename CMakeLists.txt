@@ -1,11 +1,8 @@
 cmake_minimum_required(VERSION 3.18.0)
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-
 project(
-    PythonCDT
-    VERSION 0.0.1
-    DESCRIPTION "Constrained Delaunay Triangulation"
+    ${SKBUILD_PROJECT_NAME}
+    VERSION ${SKBUILD_PROJECT_VERSION}
     LANGUAGES CXX
 )
 
@@ -14,8 +11,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(CDT/CDT CDT)
 add_subdirectory(pybind11)
-pybind11_add_module(PythonCDT cdt_bindings.cpp)
-target_include_directories(
-        PythonCDT PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
-)
-target_link_libraries(PythonCDT PRIVATE CDT::CDT)
+pybind11_add_module(${SKBUILD_PROJECT_NAME} cdt_bindings.cpp)
+target_link_libraries(${SKBUILD_PROJECT_NAME} PRIVATE CDT::CDT)
+install(TARGETS ${SKBUILD_PROJECT_NAME} DESTINATION .)
