@@ -1,11 +1,20 @@
+[project]
+name = "PythonCDT"
+version = "0.0.1"
+authors = [{name = "Leica Geosystems"}]
+description = "Constrained Delaunay Triangulation"
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python=">=3.6"
+
+[project.license]
+text = "MPL-2.0"
+
+[project.urls]
+Repository = "https://github.com/artem-ogre/PythonCDT"
+
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel",
-    "ninja",
-    "cmake>=3.12",
-]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core"]
+build-backend = "scikit_build_core.build"
 
 [tool.isort]
 profile = "black"

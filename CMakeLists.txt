@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.13.0)
+cmake_minimum_required(VERSION 3.18.0)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 project(
     PythonCDT
-    VERSION 0.1.0
-    DESCRIPTION "Software surface data rasterizer library"
+    VERSION 0.0.1
+    DESCRIPTION "Constrained Delaunay Triangulation"
     LANGUAGES CXX
 )
 
@@ -19,5 +19,3 @@ target_include_directories(
         PythonCDT PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
 )
 target_link_libraries(PythonCDT PRIVATE CDT::CDT)
-# Use rasterizer as pre-compiled header for faster test-only re-compiles
-#target_precompile_headers(PythonCDT PRIVATE include/rasterizer.h)
