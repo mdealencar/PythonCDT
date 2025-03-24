@@ -16,9 +16,8 @@ Repository = "https://github.com/artem-ogre/PythonCDT"
 requires = ["scikit-build-core"]
 build-backend = "scikit_build_core.build"
 
-# [tool.setuptools.packages.find]
-# exclude = [
-# ]
+[tool.scikit-build]
+wheel.exclude = ["include/*", "cmake/*"]
 
 [tool.isort]
 profile = "black"
