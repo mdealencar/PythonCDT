@@ -16,17 +16,9 @@ Repository = "https://github.com/artem-ogre/PythonCDT"
 requires = ["scikit-build-core"]
 build-backend = "scikit_build_core.build"
 
+# [tool.setuptools.packages.find]
+# exclude = [
+# ]
+
 [tool.isort]
 profile = "black"
-
-[tool.pytest.ini_options]
-minversion = "6.0"
-addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
-xfail_strict = true
-filterwarnings = ["error"]
-testpaths = ["tests"]
-
-[tool.cibuildwheel]
-test-command = "pytest {project}/tests"
-test-extras = ["test"]
-test-skip = ["*universal2:arm64"]
