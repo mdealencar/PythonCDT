@@ -38,8 +38,8 @@ jobs:
       - uses: pypa/cibuildwheel@v2.23
         env:
           CIBW_ARCHS: auto64
-          CIBW_SKIP: "*musllinux*"
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_34
+          CIBW_SKIP: "*musllinux* pp*"
+          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
