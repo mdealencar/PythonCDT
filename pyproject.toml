@@ -13,7 +13,7 @@ text = "MPL-2.0"
 Repository = "https://github.com/artem-ogre/PythonCDT"
 
 [build-system]
-requires = ["scikit-build-core"]
+requires = ["scikit-build-core", "pybind11"]
 build-backend = "scikit_build_core.build"
 
 [tool.scikit-build]

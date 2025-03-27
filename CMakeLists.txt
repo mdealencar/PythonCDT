@@ -13,8 +13,11 @@ project(
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+set(PYBIND11_NEWPYTHON ON)
+find_package(pybind11 CONFIG REQUIRED)
+
 add_subdirectory(CDT/CDT CDT)
-add_subdirectory(pybind11)
-pybind11_add_module(${SKBUILD_PROJECT_NAME} cdt_bindings.cpp)
+pybind11_add_module(${SKBUILD_PROJECT_NAME} MODULE cdt_bindings.cpp)
+target_link_libraries(${SKBUILD_PROJECT_NAME} PRIVATE pybind11::module)
 target_link_libraries(${SKBUILD_PROJECT_NAME} PRIVATE CDT::CDT)
 install(TARGETS ${SKBUILD_PROJECT_NAME} LIBRARY DESTINATION .)
