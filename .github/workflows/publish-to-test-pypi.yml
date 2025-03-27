@@ -1,7 +1,7 @@
-name: Publish Python distribution to TestPyPI
+name: Publish Python artifacts to TestPyPI
 
-# on: push
-on: workflow_dispatch
+on:
+  workflow_dispatch:
 
 jobs:
   download-wheels:

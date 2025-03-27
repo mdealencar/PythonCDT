@@ -1,7 +1,7 @@
 name: Build wheels for multiple platforms
 
-on: push
-#   workflow_dispatch:
+on:
+  workflow_dispatch:
 #   pull_request:
 #   push:
 #     branches:
@@ -12,7 +12,7 @@ on: push
 
 jobs:
   build_wheels:
-    name: Build wheels for ${{ matrix.os }}
+    name: Build wheels for (${{ matrix.os }}, ${{ matrix.arch }}, ${{ matrix.
     runs-on: ${{ matrix.runs-on }}
     strategy:
       matrix:
