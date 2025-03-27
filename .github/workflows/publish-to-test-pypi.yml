@@ -1,38 +1,43 @@
 name: Publish Python distribution to TestPyPI
 
-on: push
+# on: push
 
 jobs:
-  build:
-    name: Build distribution
+  download-wheels:
+    name: Get the pre-built wheels
     runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        persist-credentials: false
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.x"
-    - name: Install pypa/build
-      run: >-
-        python3 -m
-        pip install
-        build
-        --user
-    - name: Build a binary wheel and a source tarball
-      run: python3 -m build
-    - name: Store the distribution packages
-      uses: actions/upload-artifact@v4
-      with:
-        name: python-package-distributions
-        path: dist/
+    # this must match the cibuildwheel.yml section
+    strategy:
+      matrix:
+        # os: [ linux-intel, linux-arm, windows, macOS-intel, macOS-arm ]
+        os: [ linux-intel, windows ]
+        include:
+          - archs: auto
+            platform: auto
+          - os: linux-intel
+            runs-on: ubuntu-latest
+          - os: linux-arm
+            runs-on: ubuntu-24.04-arm
+          - os: windows
+            runs-on: windows-latest
+          - os: macos-intel
+            # macos-13 was the last x86_64 runner
+            runs-on: macos-13
+          - os: macos-arm
+            # macos-14+ (including latest) are ARM64 runners
+            runs-on: macos-latest
+            archs: auto,universal2
 
+    steps:
+    - name: Download wheels
+      uses: actions/download-artifact@v4
+      with:
+        name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+        path: wheelhouse/
+  
   publish-to-testpypi:
     name: Publish Python distribution to TestPyPI
-    needs:
-    - build
     runs-on: ubuntu-latest
 
     environment:
@@ -43,11 +48,11 @@ jobs:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
 
     steps:
-    - name: Download all the dists
+    - name: Download source distribution
       uses: actions/download-artifact@v4
       with:
-        name: python-package-distributions
-        path: dist/
+        name: cibw-sdist
+        path: wheelhouse/
     - name: Publish all the dists
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
