@@ -1,14 +1,10 @@
-name: Build wheels/sdist and publish to TestPyPI
+name: Build wheels/sdist and publish to PyPI
 
 on:
   push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:
-  release:
-    types:
-      - published
-    pull_request:
-      paths:
-        - ".github/workflows/cd.yml"
 
 jobs:
   make_sdist:
@@ -44,13 +40,11 @@ jobs:
         with:
           name: cibw-wheels-${{ matrix.os }}
           path: wheelhouse/*.whl
-  upload_all:
-    name: Publish on TestPyPI
+  publish_all:
+    name: Publish on PyPI
     needs: [build_wheels, make_sdist]
     runs-on: ubuntu-latest
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/PythonCDT
+    environment: pypi
     permissions:
       id-token: write
       attestations: write
@@ -66,7 +60,5 @@ jobs:
         uses: actions/attest-build-provenance@v2.2.3
         with:
           subject-path: "dist/*"
-      - name: Upload to TestPyPI
+      - name: Upload to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: "https://test.pypi.org/legacy/"
