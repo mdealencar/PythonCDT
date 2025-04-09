@@ -11,7 +11,7 @@ import pytest
 import tempfile
 import hashlib
 
-import PythonCDT as cdt
+import condeltri as cdt
 
 
 def test_constants() -> None:
