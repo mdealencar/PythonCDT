@@ -2,6 +2,8 @@ name: Build wheels/sdist and publish to PyPI
 
 on:
   push:
+    branches:
+      - 'ConDelTri'
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:
