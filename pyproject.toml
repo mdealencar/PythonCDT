@@ -10,7 +10,7 @@ requires-python=">=3.10"
 text = "MPL-2.0"
 
 [project.urls]
-Repository = "https://github.com/artem-ogre/PythonCDT"
+Repository = "https://github.com/mdealencar/PythonCDT/tree/ConDelTri"
 
 [build-system]
 requires = ["scikit-build-core", "pybind11"]
