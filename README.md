@@ -7,7 +7,7 @@ Python bindings for [CDT: C++ library for constrained Delaunay triangulation](ht
 ## Installation
 
 ```
-pip instal condeltri
+pip install condeltri
 ```
 
 ## License
