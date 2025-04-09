@@ -1,5 +1,5 @@
 [project]
-name = "PythonCDT"
+name = "condeltri"
 version = "0.0.1"
 authors = [{name = "Leica Geosystems"}]
 description = "Constrained Delaunay Triangulation"

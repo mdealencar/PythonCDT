@@ -1,19 +1,13 @@
-# PythonCDT
+# ConDelTri: Constrained Delaunay Triangulation
+
+This is a rebranded fork of [PythonCDT](https://github.com/artem-ogre/PythonCDT) by Leica Geosystems, maintained by [Artem Amirkhanov](https://github.com/artem-ogre).
 
 Python bindings for [CDT: C++ library for constrained Delaunay triangulation](https://github.com/artem-ogre/CDT) implemented with [pybind11](https://github.com/pybind/pybind11)
 
-***If PythonCDT helped you please consider adding a star on [GitHub](https://github.com/artem-ogre/PythonCDT). This means a lot to the authors*** 🤩
-## Building
+## Installation
 
-### Pre-conditions
-- Clone with submodules: `git clone --recurse-submodules https://github.com/artem-ogre/PythonCDT.git`
-- Make sure packages from requirements.txt are available.
-
-```bash
-# build the wheel and install the package with pip
-pip3 install .
-# run tests
-pytest ./cdt_bindings_test.py
+```
+pip instal condeltri
 ```
 
 ## License
