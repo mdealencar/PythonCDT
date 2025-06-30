@@ -20,7 +20,7 @@ include(FetchContent)
 FetchContent_Declare(
   CDT
   GIT_REPOSITORY https://github.com/artem-ogre/CDT.git
-  GIT_TAG 4b4181713c73cf0a49a5b88fb3df4acca7436235
+  GIT_TAG 5a1d702a01b24b33555913b90934fe673d51fc0f
   SOURCE_SUBDIR CDT
 )
 FetchContent_MakeAvailable(CDT)
