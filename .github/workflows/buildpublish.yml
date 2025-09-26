@@ -50,6 +50,7 @@ jobs:
       - uses: pypa/cibuildwheel@v3.1
         env:
           CIBW_ARCHS: auto64
+          CIBW_SKIP: "*musllinux*"
           CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_x86_64_image }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
