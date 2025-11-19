@@ -9,6 +9,10 @@ Python bindings for [CDT: C++ library for constrained Delaunay triangulation](ht
 ```
 pip install condeltri
 ```
+Or:
+```
+conda install --channel=conda-forge condeltri
+```
 
 ## License
 [Mozilla Public License, v. 2.0](https://www.mozilla.org/en-US/MPL/2.0/FAQ/)
