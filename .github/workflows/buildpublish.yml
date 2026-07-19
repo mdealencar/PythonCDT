@@ -11,13 +11,13 @@ jobs:
     name: Make SDist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
       - name: Build SDist
         run: pipx run build --sdist
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: cibw-sdist
           path: dist/*.tar.gz
@@ -43,10 +43,10 @@ jobs:
           - os: macos-15-intel  # Intel / x86_64
           - os: macos-15        # Apple Silicon / arm64
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: pypa/cibuildwheel@v3.1
+      - uses: pypa/cibuildwheel@v4.1.0
         env:
           CIBW_ARCHS: auto64
           CIBW_SKIP: "*musllinux*"
@@ -72,7 +72,7 @@ jobs:
             "{project}/stub_consistency_test.py"
             "{project}/cdt_bindings_test.py"
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cibw-wheels-${{ matrix.os }}${{ matrix.manylinux && format('-{0}', matrix.manylinux) || '' }}
           path: wheelhouse/*.whl
@@ -87,13 +87,13 @@ jobs:
       contents: read
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           pattern: cibw-*
           path: dist
           merge-multiple: true
       - name: Generate artifact attestations
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: "dist/*"
       - name: Upload to PyPI
