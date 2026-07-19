@@ -55,9 +55,15 @@ jobs:
           # only place a platform-specific float-formatting difference can
           # show up: the Sweden case in cdt_bindings_test.py compares a digest
           # of the serialised triangulation, and the Windows and macOS wheels
-          # are not covered by test.yml. Mirrors requirements.txt, which
-          # cibuildwheel cannot read from here.
-          CIBW_TEST_REQUIRES: numpy pytest
+          # are not covered by test.yml. manylinux2014 needs an older NumPy
+          # line that still publishes glibc 2.17 wheels; newer NumPy releases
+          # fall back to an sdist build there and require a newer GCC.
+          CIBW_TEST_REQUIRES: ${{ matrix.manylinux == 'manylinux2014' && 'numpy<2.3 pytest' || 'numpy pytest' }}
+          # NumPy 2.2.x does not publish CPython 3.14 wheels, and newer NumPy
+          # releases no longer provide manylinux2014 wheels. The condeltri
+          # cp314 manylinux2014 wheel can still be built, but this test
+          # dependency cannot be installed from wheels on that baseline.
+          CIBW_TEST_SKIP: ${{ matrix.manylinux == 'manylinux2014' && 'cp314-*' || '' }}
           # cibuildwheel runs this from a temporary directory, so `import
           # condeltri` resolves to the installed wheel rather than the source
           # tree; both test files find their own data relative to __file__.
