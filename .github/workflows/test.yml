@@ -1,24 +1,19 @@
-name: Stub consistency
+name: Tests
 
-# condeltri.pyi is hand-written and is what every downstream type checker reads
-# instead of the extension, so it has to track cdt_bindings.cpp. The publish
-# workflow only runs on version tags, which is too late to find out; this runs
-# on every push and PR.
+# Runs the whole suite on every push and PR. The publish workflow only runs on
+# version tags, which is too late to find out anything is wrong.
 #
-# Only stub_consistency_test.py is run here. cdt_bindings_test.py cannot pass
-# from a plain checkout: test_insert_vertices/test_insert_conform_edges read
-# CDT/visualizer/data/*.txt by relative path, but the upstream CDT sources are
-# pulled in by FetchContent at build time and are not part of this repository
-# (there is no .gitmodules, so the `submodules: true` in the publish workflow is
-# a no-op). Add it here once those tests can locate their fixtures.
+# stub_consistency_test.py matters because condeltri.pyi is hand-written and is
+# what every downstream type checker reads instead of the extension, so it has
+# to track cdt_bindings.cpp.
 on:
   push:
   pull_request:
   workflow_dispatch:
 
 jobs:
-  stub-consistency:
-    name: Stub matches extension (Python ${{ matrix.python-version }})
+  test:
+    name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -36,9 +31,13 @@ jobs:
         run: python -m pip install --verbose .
       - name: Install test dependencies
         run: python -m pip install -r requirements.txt
-      - name: Check stub against the built extension
+      - name: Run the test suite
         # run from a scratch directory so `import condeltri` resolves to the
-        # installed extension and never to something in the source tree
+        # installed extension and never to something in the source tree.
+        # cdt_bindings_test.py locates its fixtures relative to __file__, so it
+        # does not care about the working directory.
         run: |
           mkdir -p /tmp/run && cd /tmp/run
-          python -m pytest -v "$GITHUB_WORKSPACE/stub_consistency_test.py"
+          python -m pytest -v \
+            "$GITHUB_WORKSPACE/stub_consistency_test.py" \
+            "$GITHUB_WORKSPACE/cdt_bindings_test.py"

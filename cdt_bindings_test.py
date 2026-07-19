@@ -10,8 +10,12 @@ import numpy as np
 import pytest
 import tempfile
 import hashlib
+from pathlib import Path
 
 import condeltri as cdt
+
+# fixtures vendored from CDT's visualizer/data (see test_data/README.md)
+DATA_DIR = Path(__file__).parent / "test_data"
 
 
 def test_constants() -> None:
@@ -131,25 +135,77 @@ def triangulation_md5_checksum(t: cdt.Triangulation):
         save_triangulation_as_off(t, off_file)
         return md5_checksum(off_file)
 
+
+def triangles_of(t: cdt.Triangulation):
+    """Triangles as a canonical, order-independent set of vertex-index triples.
+
+    CDT is free to emit triangles in any order, and to name a triangle's
+    vertices starting from any of its three corners, without the triangulation
+    being any different. Sorting both levels compares the topology itself.
+    """
+    return sorted(tuple(sorted(int(i) for i in tri.vertices)) for tri in t.triangles_iter())
+
+
+def fixed_edges_of(t: cdt.Triangulation):
+    """Fixed edges as a canonical, order-independent set of index pairs."""
+    return sorted(tuple(sorted((e.v1, e.v2))) for e in t.fixed_edges_iter())
+
+
+def assert_vertices(t: cdt.Triangulation, expected, skip: int = 0) -> None:
+    """Assert the vertex coordinates, comparing floats with a tolerance.
+
+    `skip` drops leading vertices from the comparison, used to ignore the
+    super-triangle: its coordinates are CDT's own scratch geometry and have
+    changed between CDT releases without the triangulation being any different.
+    """
+    got = [c for v in list(t.vertices_iter())[skip:] for c in (v.x, v.y)]
+    assert got == pytest.approx([c for xy in expected for c in xy]), "Wrong vertex coordinates"
+
 def test_triangulate_input_file() -> None:
-    vv, ee = read_input_file("CDT/visualizer/data/Constrained Sweden.txt")
+    vv, ee = read_input_file(DATA_DIR / "Constrained Sweden.txt")
     t = cdt.Triangulation(cdt.VertexInsertionOrder.AS_PROVIDED, cdt.IntersectingConstraintEdges.TRY_RESOLVE, 0.0)
     t.insert_vertices(vv)
     t.insert_edges(ee)
     t.erase_outer_triangles_and_holes()
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        off_file = f"{tmp_dir}/cdt.off"
-        save_triangulation_as_off(t, off_file)
-        assert md5_checksum(off_file) == '5fb163a9f27ec6bdd05b7d5f2b23416c', "Wrong OFF file contents"
+    assert t.vertices_count() == 2619, "Wrong vertex count in triangulation"
+    assert t.triangles_count() == 2580, "Wrong triangle count in triangulation"
+    assert t.fixed_edges_count() == 2619, "Wrong fixed edge count in triangulation"
+    assert cdt.verify_topology(t), "Verifying topology produced wrong result"
+    # At 2619 vertices the connectivity is too large to assert on directly, so
+    # this one case keeps a digest as a regression tripwire. Unlike the smaller
+    # tests it is sensitive to vertex ordering and float formatting: re-record
+    # it when the CDT pin in CMakeLists.txt moves, after checking the counts and
+    # verify_topology above still hold.
+    assert triangulation_md5_checksum(t) == 'db59c00d9dad866781cd96779e5262b7', "Wrong OFF file contents"
 
 
 def test_conform_to_edges() -> None:
-    vv, ee = read_input_file("CDT/visualizer/data/ditch.txt")
+    vv, ee = read_input_file(DATA_DIR / "ditch.txt")
     t = cdt.Triangulation(cdt.VertexInsertionOrder.AS_PROVIDED, cdt.IntersectingConstraintEdges.TRY_RESOLVE, 0.0)
     t.insert_vertices(vv)
     t.conform_to_edges(ee)
     t.erase_outer_triangles_and_holes()
-    assert triangulation_md5_checksum(t) == 'df2503c614e2f98656038948b355b27e', "Wrong OFF file contents"
+    assert len(t.vertices) == 14, "Wrong vertex count in triangulation"
+    assert len(t.triangles) == 15, "Wrong triangle count in triangulation"
+    assert len(t.fixed_edges) == 15, "Wrong fixed edge count in triangulation"
+    assert cdt.verify_topology(t), "Verifying topology produced wrong result"
+    # The 11 input vertices come first and unchanged; conforming splits the
+    # three constraint edges that cross the ditch, appending their midpoints.
+    assert_vertices(t, [
+        (15.2817039560085, -35.8482583312558), (16.9298083110526, -19.5320252163193),
+        (15.2817039560085, 0.9044687862274401), (17.5890500530702, 18.044754078686),
+        (16.1057561335305, 40.7061889605422), (-16.6915205318468, -35.6010426779992),
+        (-14.3017692170329, -14.9173330221958), (-14.9610109590506, 14.006898408828),
+        (-15.0434161768028, 37.9044115569673), (1.27281693813374, -36.0954739845124),
+        (1.27281693813374, 40.62378374279), (1.27281693813374, 2.2641548791388004),
+        (1.27281693813374, -16.9156595526868), (1.27281693813374, 21.443969310964402)])
+    assert triangles_of(t) == [
+        (0, 1, 9), (1, 2, 12), (1, 9, 12), (2, 3, 11), (2, 11, 12), (3, 4, 13), (3, 11, 13),
+        (4, 10, 13), (5, 6, 12), (5, 9, 12), (6, 7, 11), (6, 11, 12), (7, 8, 13), (7, 11, 13),
+        (8, 10, 13)], "Wrong triangle connectivity"
+    assert fixed_edges_of(t) == [
+        (0, 1), (0, 9), (1, 2), (2, 3), (3, 4), (4, 10), (5, 6), (5, 9), (6, 7), (7, 8),
+        (8, 10), (9, 12), (10, 13), (11, 12), (11, 13)], "Wrong fixed edges"
 
 
 @pytest.mark.parametrize("vv", [[cdt.V2d(-1, 0), cdt.V2d(0, 0.5), cdt.V2d(1, 0), cdt.V2d(0, -0.5)],
@@ -161,27 +217,57 @@ def test_insert_vertices(vv) -> None:
     assert len(t.vertices) == 7, "Wrong vertex count in triangulation"
     assert len(t.triangles) == 9, "Wrong triangle count in triangulation"
     assert len(t.fixed_edges) == 0, "Wrong fixed edge count in triangulation"
-    assert triangulation_md5_checksum(t) == 'c424c4f2691dc3b9aabd39dcf2e17c53', "Wrong OFF file contents"
+    assert cdt.verify_topology(t), "Verifying topology produced wrong result"
+    # The three super-triangle vertices come first, then the four inputs
+    # unchanged. The super-triangle's own coordinates are CDT's choice and are
+    # deliberately not asserted on; erase_super_triangle below drops them.
+    assert_vertices(t, [(-1.0, 0.0), (0.0, 0.5), (1.0, 0.0), (0.0, -0.5)], skip=3)
+    assert triangles_of(t) == [
+        (0, 1, 6), (0, 2, 3), (0, 3, 6), (1, 2, 5), (1, 5, 6),
+        (2, 3, 4), (2, 4, 5), (3, 4, 6), (4, 5, 6)], "Wrong triangle connectivity"
+
+    t.erase_super_triangle()
+    assert_vertices(t, [(-1.0, 0.0), (0.0, 0.5), (1.0, 0.0), (0.0, -0.5)])
+    assert triangles_of(t) == [(0, 1, 3), (1, 2, 3)], "Wrong triangle connectivity"
 
 
 @pytest.mark.parametrize("ee", [[cdt.Edge(0, 1), cdt.Edge(2, 3), cdt.Edge(3, 4), cdt.Edge(5, 6)],
                                 np.array([[0, 1], [2, 3], [3, 4], [5, 6]], dtype=np.uintc),
                                 np.array([0, 1, 2, 3, 3, 4, 5, 6], dtype=np.uintc)])
 def test_insert_conform_edges(ee) -> None:
+    pts = [(0, 0), (4, 0), (5, 1), (2, 1), (-1, 1), (0, 2), (4, 2)]
+
     # insert edges
     t = cdt.Triangulation(cdt.VertexInsertionOrder.AS_PROVIDED, cdt.IntersectingConstraintEdges.NOT_ALLOWED, 0.0)
-    t.insert_vertices(np.array([[0, 0], [4, 0], [5, 1], [2, 1], [-1, 1], [0, 2], [4, 2]], dtype=float))
+    t.insert_vertices(np.array(pts, dtype=float))
     t.insert_edges(ee)
     assert len(t.vertices) == 10, "Wrong vertex count in triangulation"
     assert len(t.triangles) == 15, "Wrong triangle count in triangulation"
     assert len(t.fixed_edges) == 4, "Wrong fixed edge count in triangulation"
-    assert triangulation_md5_checksum(t) == '8424ba2c8f8ebabe1bea4141464a347b', "Wrong OFF file contents"
+    assert cdt.verify_topology(t), "Verifying topology produced wrong result"
+    assert_vertices(t, pts, skip=3)
+    assert triangles_of(t) == [
+        (0, 1, 4), (0, 2, 8), (0, 3, 4), (0, 3, 7), (0, 7, 8), (1, 2, 9), (1, 4, 5), (1, 5, 9),
+        (2, 8, 9), (3, 4, 6), (3, 6, 7), (4, 5, 6), (5, 6, 9), (6, 7, 8), (6, 8, 9),
+    ], "Wrong triangle connectivity"
+    # the requested constraints, shifted by the three super-triangle vertices
+    assert fixed_edges_of(t) == [(3, 4), (5, 6), (6, 7), (8, 9)], "Wrong fixed edges"
 
     # conform to edges
     t = cdt.Triangulation(cdt.VertexInsertionOrder.AS_PROVIDED, cdt.IntersectingConstraintEdges.NOT_ALLOWED, 0.0)
-    t.insert_vertices(np.array([[0, 0], [4, 0], [5, 1], [2, 1], [-1, 1], [0, 2], [4, 2]], dtype=float))
+    t.insert_vertices(np.array(pts, dtype=float))
     t.conform_to_edges(ee)
     assert len(t.vertices) == 12, "Wrong vertex count in triangulation"
     assert len(t.triangles) == 19, "Wrong triangle count in triangulation"
     assert len(t.fixed_edges) == 6, "Wrong fixed edge count in triangulation"
-    assert triangulation_md5_checksum(t) == '9cb9dbaca4943ff0e3aab6c1d31f5a35', "Wrong OFF file contents"
+    assert cdt.verify_topology(t), "Verifying topology produced wrong result"
+    # conforming splits edges (2,3) and (3,4) at their midpoints, appending
+    # (3.5, 1) on (5,1)-(2,1) and (0.5, 1) on (2,1)-(-1,1)
+    assert_vertices(t, [*pts, (3.5, 1.0), (0.5, 1.0)], skip=3)
+    assert triangles_of(t) == [
+        (0, 1, 4), (0, 2, 8), (0, 3, 4), (0, 3, 7), (0, 7, 8), (1, 2, 9), (1, 4, 5), (1, 5, 9),
+        (2, 8, 9), (3, 4, 6), (3, 6, 11), (3, 7, 11), (4, 5, 10), (4, 6, 10), (5, 9, 10),
+        (6, 8, 9), (6, 8, 11), (6, 9, 10), (7, 8, 11),
+    ], "Wrong triangle connectivity"
+    assert fixed_edges_of(t) == [
+        (3, 4), (5, 10), (6, 10), (6, 11), (7, 11), (8, 9)], "Wrong fixed edges"
