@@ -29,3 +29,8 @@ pybind11_add_module(${SKBUILD_PROJECT_NAME} MODULE cdt_bindings.cpp)
 target_link_libraries(${SKBUILD_PROJECT_NAME} PRIVATE pybind11::module)
 target_link_libraries(${SKBUILD_PROJECT_NAME} PRIVATE CDT::CDT)
 install(TARGETS ${SKBUILD_PROJECT_NAME} LIBRARY DESTINATION .)
+
+# PEP 561: a compiled extension is opaque to type checkers, so ship the stubs
+# describing its API alongside it (keep condeltri.pyi in sync with
+# cdt_bindings.cpp).
+install(FILES ${SKBUILD_PROJECT_NAME}.pyi py.typed DESTINATION .)
