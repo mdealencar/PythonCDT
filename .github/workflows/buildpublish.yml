@@ -46,12 +46,25 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          submodules: true
       - uses: pypa/cibuildwheel@v3.1
         env:
           CIBW_ARCHS: auto64
           CIBW_SKIP: "*musllinux*"
           CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_x86_64_image }}
+          # Exercise each wheel on the platform it was built for. This is the
+          # only place a platform-specific float-formatting difference can
+          # show up: the Sweden case in cdt_bindings_test.py compares a digest
+          # of the serialised triangulation, and the Windows and macOS wheels
+          # are not covered by test.yml. Mirrors requirements.txt, which
+          # cibuildwheel cannot read from here.
+          CIBW_TEST_REQUIRES: numpy pytest
+          # cibuildwheel runs this from a temporary directory, so `import
+          # condeltri` resolves to the installed wheel rather than the source
+          # tree; both test files find their own data relative to __file__.
+          CIBW_TEST_COMMAND: >-
+            pytest -v
+            "{project}/stub_consistency_test.py"
+            "{project}/cdt_bindings_test.py"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
