@@ -5,6 +5,8 @@ import enum
 from collections.abc import Iterator
 from typing import overload
 
+import numpy as np
+from numpy.typing import NDArray
 from typing_extensions import Buffer
 
 NO_VERTEX: int
@@ -64,6 +66,8 @@ class Triangulation:
     def overlap_count(self) -> dict[Edge, int]: ...
     @property
     def piece_to_originals(self) -> dict[Edge, list[Edge]]: ...
+    def vertices_array(self, *, copy: bool = True) -> NDArray[np.void]: ...
+    def triangles_array(self, *, copy: bool = True) -> NDArray[np.void]: ...
     @overload
     def insert_vertices(self, vertices: list[V2d]) -> None: ...
     @overload

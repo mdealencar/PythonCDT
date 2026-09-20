@@ -6,11 +6,13 @@
 
 """ Tests for CDT Python bindings """
 
+import hashlib
+import tempfile
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
 import numpy as np
 import pytest
-import tempfile
-import hashlib
-from pathlib import Path
 
 import condeltri as cdt
 
@@ -71,6 +73,11 @@ def test_Triangulation() -> None:
     assert len(t.vertices) == 4, "Wrong vertex count in triangulation"
     assert len(t.triangles) == 2, "Wrong triangle count in triangulation"
     assert len(t.fixed_edges) == 1, "Wrong fixed edge count in triangulation"
+
+    vertices = t.vertices
+    vertices[3].x = 42
+    assert t.vertices[3] == cdt.V2d(42, -0.5), "Vertex property must reference triangulation's vertices"
+    vertices[3].x = 0
 
     # test retrieving triangulation data using iterators
     assert t.vertices_count() == len(t.vertices), "Wrong vertex count"
@@ -271,3 +278,66 @@ def test_insert_conform_edges(ee) -> None:
     ], "Wrong triangle connectivity"
     assert fixed_edges_of(t) == [
         (3, 4), (5, 10), (6, 10), (6, 11), (7, 11), (8, 9)], "Wrong fixed edges"
+
+
+@pytest.mark.parametrize("copy", [True, False])
+def test_array_access(copy: bool) -> None:
+    t = cdt.Triangulation(cdt.VertexInsertionOrder.AS_PROVIDED, cdt.IntersectingConstraintEdges.NOT_ALLOWED, 0.0)
+    assert t.vertices_array(copy=copy).shape == (0,)
+    assert t.triangles_array(copy=copy).shape == (0,)
+
+    t.insert_vertices([cdt.V2d(-1, 0), cdt.V2d(0, 0.5), cdt.V2d(1, 0), cdt.V2d(0, -0.5)])
+    vertices = t.vertices_array(copy=copy)
+    triangles = t.triangles_array(copy=copy)
+    assert vertices.dtype.names == ("x", "y")
+    assert triangles.dtype.names == ("vertices", "neighbors")
+    assert vertices.tolist() == [(v.x, v.y) for v in t.vertices]
+    assert triangles["vertices"].tolist() == [list(tri.vertices) for tri in t.triangles]
+    assert triangles["neighbors"].tolist() == [list(tri.neighbors) for tri in t.triangles]
+
+    expected = [vertices.copy(), triangles.copy()]
+    del t
+    for array, before in zip((vertices, triangles), expected):
+        assert array.flags.owndata == copy
+        assert array.flags.writeable == copy
+        assert np.array_equal(array, before)
+
+
+def test_shared_triangulation_between_threads() -> None:
+    vertices = np.random.default_rng(0).random((16_000, 2))
+    t = cdt.Triangulation(cdt.VertexInsertionOrder.AUTO, cdt.IntersectingConstraintEdges.NOT_ALLOWED, 0.0)
+
+    def insert_and_read(batch: np.ndarray) -> None:
+        t.insert_vertices(batch)
+        assert t.triangles_array()["vertices"].max() < t.vertices_count()
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        list(pool.map(insert_and_read, np.array_split(vertices, 4)))
+
+    assert t.vertices_count() == len(vertices) + 3
+    assert cdt.verify_topology(t)
+
+
+def test_buffer_inputs_must_be_contiguous_pairs() -> None:
+    vertices = np.array([[0, 0], [9, 9], [1, 0], [9, 9], [0, 1], [9, 9], [1, 1], [9, 9]], dtype=np.float64)
+    edges = np.array([[0, 1], [9, 9], [1, 3], [9, 9]], dtype=np.uintc)
+
+    def triangulation() -> cdt.Triangulation:
+        return cdt.Triangulation(cdt.VertexInsertionOrder.AS_PROVIDED, cdt.IntersectingConstraintEdges.NOT_ALLOWED, 0.0)
+
+    for invalid in (vertices[::2], vertices[:, ::-1], np.asfortranarray(vertices[::2]), np.zeros((2, 3))):
+        with pytest.raises(RuntimeError):
+            triangulation().insert_vertices(invalid)
+
+    t = triangulation()
+    t.insert_vertices(vertices[::2].copy())
+    for insert in (cdt.Triangulation.insert_edges, cdt.Triangulation.conform_to_edges):
+        with pytest.raises(RuntimeError):
+            insert(t, edges[::2])
+
+    for valid in (vertices[::2].copy(), vertices[::2].ravel()):
+        t = triangulation()
+        t.insert_vertices(valid)
+        assert [(v.x, v.y) for v in t.vertices][3:] == [(0, 0), (1, 0), (0, 1), (1, 1)]
+    t.insert_edges(edges[::2].copy())
+    assert t.fixed_edges == {cdt.Edge(3, 4), cdt.Edge(4, 6)}
