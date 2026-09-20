@@ -138,7 +138,7 @@ with open(
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="PythonCDT",
-    version="1.4.5",
+    version="2.0.0",
     author="Artem Amirkhanov",
     description=(
         "Python bindings for CDT: constrained Delaunay triangulation"
