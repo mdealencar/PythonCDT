@@ -59,14 +59,21 @@ jobs:
           CIBW_ARCHS: auto64
           CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_x86_64_image || '' }}
           CIBW_MUSLLINUX_X86_64_IMAGE: ${{ matrix.musllinux || '' }}
+          # manylinux2014 is glibc 2.17, a baseline NumPy stopped publishing
+          # wheels for after 2.2.x, so pip falls back to the NumPy sdist there
+          # and that build needs a newer GCC than the image's 10.2. condeltri
+          # itself requires an unpinned `numpy`, and cibuildwheel installs the
+          # wheel *before* CIBW_TEST_REQUIRES, so the pin only takes effect if
+          # a satisfying NumPy is already in the test environment by then --
+          # hence before-test rather than test-requires.
+          CIBW_BEFORE_TEST: ${{ matrix.manylinux == 'manylinux2014' && 'pip install "numpy<2.3"' || '' }}
           # Exercise each wheel on the platform it was built for. This is the
           # only place a platform-specific float-formatting difference can
           # show up: the Sweden case in cdt_bindings_test.py compares a digest
           # of the serialised triangulation, and the Windows and macOS wheels
-          # are not covered by test.yml. manylinux2014 needs an older NumPy
-          # line that still publishes glibc 2.17 wheels; newer NumPy releases
-          # fall back to an sdist build there and require a newer GCC.
-          CIBW_TEST_REQUIRES: ${{ matrix.manylinux == 'manylinux2014' && 'numpy<2.3 pytest' || 'numpy pytest' }}
+          # are not covered by test.yml. NumPy comes in as a dependency of the
+          # wheel being tested.
+          CIBW_TEST_REQUIRES: pytest
           # NumPy 2.2.x does not publish CPython 3.14 wheels, and newer NumPy
           # releases no longer provide manylinux2014 wheels. The condeltri
           # cp314 manylinux2014 wheel can still be built, but this test
