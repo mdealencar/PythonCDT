@@ -4,7 +4,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 project(
     PythonCDT
-    VERSION 1.4.5
+    VERSION 2.0.0
     DESCRIPTION "Python bindings for CDT: constrained Delaunay triangulation"
     LANGUAGES CXX
 )
