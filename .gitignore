@@ -1,9 +1,33 @@
-.cache/*
-.vscode/*
-.idea/*
-build/*
-dist/*
-cmake-build-*/*
-python/.venv/*
-.venv/*
+# C extensions & compiled binaries
+*.so
+*.pyd
+*.dylib
+*.dll
+
+# Distribution / packaging / build artifacts
+build/
+_skbuild/
+dist/
 out/
+cmake-build-*/
+*.egg-info/
+.eggs/
+
+# Byte-compiled
+__pycache__/
+
+# Unit test & coverage reports
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Environments
+python/.venv
+/.venv
+
+# IDE & tool cache
+.cache/
+.vscode/
+.idea/
