@@ -1,6 +1,10 @@
-# ConDelTri: Constrained Delaunay Triangulation
+Fork of [PythonCDT](https://github.com/artem-ogre/PythonCDT) by Leica Geosystems, maintained by [Artem Amirkhanov](https://github.com/artem-ogre).
 
-This is a rebranded fork of [PythonCDT](https://github.com/artem-ogre/PythonCDT) by Leica Geosystems, maintained by [Artem Amirkhanov](https://github.com/artem-ogre).
+## Motivation for the fork
+
+This fork distributes PythonCDT as ConDelTri through [PyPI](https://pypi.org/project/condeltri/) and [conda-forge](https://anaconda.org/channels/conda-forge/packages/condeltri/overview) while the [pull request in the parent repository](https://github.com/artem-ogre/PythonCDT/pull/8) remains unmerged.
+
+## ConDelTri: Constrained Delaunay Triangulation
 
 Python bindings for [CDT: C++ library for constrained Delaunay triangulation](https://github.com/artem-ogre/CDT) implemented with [pybind11](https://github.com/pybind/pybind11)
 
@@ -13,6 +17,17 @@ Or:
 ```
 conda install --channel=conda-forge condeltri
 ```
+
+## CDT versions
+
+ConDelTri and CDT use separate version numbers. Each ConDelTri build fetches a fixed CDT commit through CMake.
+
+| condeltri version | CDT version | CDT commit |
+| --- | --- | --- |
+| Unreleased | 2.0.0 | [c888b30](https://github.com/artem-ogre/CDT/commit/c888b30d83312114d3ff332855a97fd95ce95f17) |
+| 0.0.5–0.0.6 | 1.4.5 | [2068d01](https://github.com/artem-ogre/CDT/commit/2068d015b9db3c92481e869b0c1f669b96a1d70a) |
+| 0.0.3–0.0.4 | 1.4.4 | [5a1d702](https://github.com/artem-ogre/CDT/commit/5a1d702a01b24b33555913b90934fe673d51fc0f) |
+| 0.0.2 | 1.4.1 + fixes | [4b41817](https://github.com/artem-ogre/CDT/commit/4b4181713c73cf0a49a5b88fb3df4acca7436235) |
 
 ## Usage examples
 
