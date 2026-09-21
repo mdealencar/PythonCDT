@@ -202,18 +202,41 @@ PYBIND11_MODULE(condeltri, m)
         .value("TRY_RESOLVE", CDT::IntersectingConstraintEdges::TryResolve)
         .value("DONT_CHECK", CDT::IntersectingConstraintEdges::DontCheck);
 
+    py::enum_<CDT::RefinementCriterion::Enum>(m, "RefinementCriterion")
+        .value("SMALLEST_ANGLE", CDT::RefinementCriterion::SmallestAngle)
+        .value("LARGEST_AREA", CDT::RefinementCriterion::LargestArea);
+
+    py::class_<CDT::Unrefined>(m, "Unrefined")
+        .def_readonly(
+            "short_edge_triangles", &CDT::Unrefined::shortEdgeTriangles)
+        .def_readonly(
+            "circumcenter_outside", &CDT::Unrefined::circumcenterOutside)
+        .def_readonly(
+            "circumcenter_on_vertex", &CDT::Unrefined::circumcenterOnVertex)
+        .def_readonly("sharp_fixed_corner", &CDT::Unrefined::sharpFixedCorner)
+        .def_readonly("short_edges", &CDT::Unrefined::shortEdges)
+        .def_readonly(
+            "split_vertex_invalid", &CDT::Unrefined::splitVertexInvalid)
+        .def("__repr__", [](const CDT::Unrefined& u) {
+            std::ostringstream oss;
+            oss << "Unrefined(short_edge_triangles=" << u.shortEdgeTriangles
+                << ", circumcenter_outside=" << u.circumcenterOutside
+                << ", circumcenter_on_vertex=" << u.circumcenterOnVertex
+                << ", sharp_fixed_corner=" << u.sharpFixedCorner
+                << ", short_edges=" << u.shortEdges
+                << ", split_vertex_invalid=" << u.splitVertexInvalid << ")";
+            return oss.str();
+        });
+
     py::class_<V2d>(m, "V2d", py::buffer_protocol())
         .def(py::init<coord_t, coord_t>(), py::arg("x"), py::arg("y"))
         .def(py::init([](py::buffer b) {
-            // Request a buffer descriptor from Python
             py::buffer_info info = b.request();
-            // Some sanity checks ...
             if (info.format != py::format_descriptor<coord_t>::format())
                 throw std::runtime_error(
                     "Incompatible format: expected a double array!");
             if (info.ndim != 1)
                 throw std::runtime_error("Incompatible buffer dimension!");
-            // create from buffer
             const coord_t* const ptr = static_cast<coord_t*>(info.ptr);
             return V2d{ptr[0], ptr[1]};
         }))
@@ -300,6 +323,7 @@ PYBIND11_MODULE(condeltri, m)
         .def_property_readonly("v2", &CDT::Edge::v2)
         .def(py::self == py::self)
         .def(py::self != py::self)
+        .def(py::self < py::self)
         .def(py::hash(py::self))
         .def("__repr__", [](const CDT::Edge& e) {
             std::ostringstream oss;
@@ -428,7 +452,83 @@ PYBIND11_MODULE(condeltri, m)
                 LockWithoutGil lock(t);
                 t.removeTriangles(triangle_indices);
             },
-            py::arg("triangle_indices"));
+            py::arg("triangle_indices"))
+        .def(
+            "refine_triangles",
+            [](Triangulation& t,
+               CDT::VertInd max_vertices_to_insert,
+               CDT::RefinementCriterion::Enum refinement_criterion,
+               coord_t refinement_threshold,
+               py::object to_erase,
+               coord_t min_edge_length) {
+                const bool has_to_erase = !to_erase.is_none();
+                if (has_to_erase && !py::isinstance<py::set>(to_erase))
+                    throw py::type_error("to_erase must be a set or None!");
+                CDT::TriIndUSet triangles_to_erase;
+                if (has_to_erase)
+                    triangles_to_erase = to_erase.cast<CDT::TriIndUSet>();
+                CDT::Unrefined unrefined;
+                {
+                    LockWithoutGil lock(t);
+                    unrefined = t.refineTriangles(
+                        max_vertices_to_insert,
+                        refinement_criterion,
+                        refinement_threshold,
+                        has_to_erase ? &triangles_to_erase : NULL,
+                        min_edge_length);
+                }
+                if (has_to_erase)
+                {
+                    py::set marked = py::reinterpret_borrow<py::set>(to_erase);
+                    marked.clear();
+                    for (const CDT::TriInd it : triangles_to_erase)
+                        marked.add(py::cast(it));
+                }
+                return unrefined;
+            },
+            py::arg("max_vertices_to_insert"),
+            py::arg("refinement_criterion") =
+                CDT::RefinementCriterion::SmallestAngle,
+            py::arg("refinement_threshold") = CDT::degToRad(coord_t(20)),
+            py::arg("to_erase") = py::none(),
+            py::arg("min_edge_length") = coord_t(1e-6),
+            "Triangles from `to_erase` are not refined; the triangles that "
+            "replace them are added to it in place.")
+        .def("find_encroached_fixed_edges", [](Triangulation& t) {
+            LockWithoutGil lock(t);
+            return t.findEncroachedFixedEdges();
+        })
+        .def(
+            "find_unrefined_triangles",
+            [](Triangulation& t,
+               CDT::RefinementCriterion::Enum refinement_criterion,
+               coord_t refinement_threshold) {
+                LockWithoutGil lock(t);
+                return t.findUnrefinedTriangles(
+                    refinement_criterion, refinement_threshold);
+            },
+            py::arg("refinement_criterion") =
+                CDT::RefinementCriterion::SmallestAngle,
+            py::arg("refinement_threshold") = CDT::degToRad(coord_t(20)))
+        .def("collect_super_triangle", [](Triangulation& t) {
+            LockWithoutGil lock(t);
+            return t.collectSuperTriangle();
+        })
+        .def("collect_outer_triangles", [](Triangulation& t) {
+            LockWithoutGil lock(t);
+            return t.collectOuterTriangles();
+        })
+        .def("collect_outer_triangles_and_holes", [](Triangulation& t) {
+            LockWithoutGil lock(t);
+            return t.collectOuterTrianglesAndHoles();
+        })
+        .def(
+            "finalize_triangulation",
+            [](Triangulation& t, const CDT::TriIndUSet& removed_triangles) {
+                LockWithoutGil lock(t);
+                t.finalizeTriangulation(removed_triangles);
+            },
+            py::arg("removed_triangles"));
 
     m.def(
         "verify_topology",
@@ -437,4 +537,35 @@ PYBIND11_MODULE(condeltri, m)
             return CDT::verifyTopology(t);
         },
         py::arg("triangulation"));
+
+    m.def(
+        "verify_winding",
+        [](Triangulation& t) {
+            LockWithoutGil lock(t);
+            return CDT::verifyWinding(t);
+        },
+        py::arg("triangulation"));
+
+    m.def("deg_to_rad", &CDT::degToRad<coord_t>, py::arg("degrees"));
+
+    m.def(
+        "area",
+        &CDT::area<coord_t>,
+        py::arg("a"),
+        py::arg("b"),
+        py::arg("c"));
+
+    m.def(
+        "circumcenter",
+        &CDT::circumcenter<coord_t>,
+        py::arg("a"),
+        py::arg("b"),
+        py::arg("c"));
+
+    m.def(
+        "smallest_angle",
+        &CDT::smallestAngle<coord_t>,
+        py::arg("a"),
+        py::arg("b"),
+        py::arg("c"));
 }

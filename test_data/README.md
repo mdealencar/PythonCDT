@@ -1,11 +1,11 @@
 # Test fixtures
 
-`Constrained Sweden.txt` and `ditch.txt` are copied verbatim from the upstream
+`Capital A.txt`, `Constrained Sweden.txt` and `ditch.txt` are copied verbatim from the upstream
 CDT repository, from `visualizer/data/` at the revision pinned in
 `CMakeLists.txt`:
 
     https://github.com/artem-ogre/CDT
-    5a1d702a01b24b33555913b90934fe673d51fc0f
+    c888b30d83312114d3ff332855a97fd95ce95f17 (2.0.0)
 
 CDT is distributed under the Mozilla Public License 2.0, the same licence as
 this project. Copyright (c) 2019 Leica Geosystems Technology AB.
