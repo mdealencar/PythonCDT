@@ -1,4 +1,6 @@
-# Unreleased
+# v0.1.0
+
+[Commit history since v0.0.6](https://github.com/mdealencar/PythonCDT/compare/v0.0.6...v0.1.0)
 
 - Updated CDT to 2.0.0 (`c888b30`), still fetched by commit ID through CMake.
 - Ported the refinement API, triangle collection and finalization methods, winding verification, triangle geometry helpers, and edge ordering from PythonCDT commit `00b219c6`.
